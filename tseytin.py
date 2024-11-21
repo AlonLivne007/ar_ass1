@@ -3,7 +3,66 @@ from pysmt.typing import BOOL
 
 
 def tseitin_transformation(formula):
-    # implement your code here
+    # Dictionary to hold new variables for subformulas
+    subformula_vars = {}
+    clauses = []
+
+    def tseitin_subformula(f):
+        if f.is_symbol():  #  If it's a symbol, return it
+            return f
+
+        if f in subformula_vars:  # If we've already processed this formula, reuse its variable
+            return subformula_vars[f]
+
+        # Create a new variable for the current formula
+        new_var = Symbol("p{}".format(len(subformula_vars) + 1), BOOL)
+        subformula_vars[f] = new_var
+
+        # Process the formula based on its type
+        if f.is_not():
+            sub_var = tseitin_subformula(f.arg(0))
+            clauses.append(Or(Not(new_var), Not(sub_var)))
+            clauses.append(Or(new_var, sub_var))
+        elif f.is_and():
+            left = tseitin_subformula(f.arg(0))
+            right = tseitin_subformula(f.arg(1))
+            # new_var <-> (left AND right)
+            clauses.append(Or(Not(new_var), left))
+            clauses.append(Or(Not(new_var), right))
+            clauses.append(Or(new_var, Not(left), Not(right)))
+        elif f.is_or():
+            left = tseitin_subformula(f.arg(0))
+            right = tseitin_subformula(f.arg(1))
+            # new_var <-> (left OR right)
+            clauses.append(Or(Not(new_var), left, right))
+            clauses.append(Or(new_var, Not(left)))
+            clauses.append(Or(new_var, Not(right)))
+        elif f.is_iff():
+            left = tseitin_subformula(f.arg(0))
+            right = tseitin_subformula(f.arg(1))
+            # new_var <-> (left <-> right)
+            clauses.append(Or(Not(new_var), Or(Not(left), right), Or(left, Not(right))))
+            clauses.append(Or(new_var, left, Not(right)))
+            clauses.append(Or(new_var, Not(left), right))
+        elif f.is_implies():
+            left = tseitin_subformula(f.arg(0))
+            right = tseitin_subformula(f.arg(1))
+            # new_var <-> (left -> right)
+            clauses.append(Or(Not(new_var), Not(left), right))
+            clauses.append(Or(new_var, left))
+            clauses.append(Or(new_var, Not(right)))
+        else:
+            raise ValueError("Unsupported operator: {}".format(f))
+
+        return new_var
+
+    # Add the root formula as the final clause
+    root_var = tseitin_subformula(formula)
+    clauses.append(Or(root_var))
+
+    # Return the CNF formula as a conjunction of clauses
+    return And(clauses)
+
 
 
 # Example usage:
@@ -25,6 +84,6 @@ if __name__ == "__main__":
     formula4 = And(Or(A, B), Not(And(A, B)))
 
     # Apply Tseitin transformation
-    cnf_formula = tseitin_transformation(formula1)
-    print("formula:", formula1)
+    cnf_formula = tseitin_transformation(formula4)
+    print("formula:", formula4)
     print("CNF formula:", cnf_formula)
