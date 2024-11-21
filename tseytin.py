@@ -41,9 +41,10 @@ def tseitin_transformation(formula):
             left = tseitin_subformula(f.arg(0))
             right = tseitin_subformula(f.arg(1))
             # new_var <-> (left <-> right)
-            clauses.append(Or(Not(new_var), Or(Not(left), right), Or(left, Not(right))))
-            clauses.append(Or(new_var, left, Not(right)))
-            clauses.append(Or(new_var, Not(left), right))
+            clauses.append(Or(Not(new_var), Not(left), right))
+            clauses.append(Or(Not(new_var), left, Not(right)))
+            clauses.append(Or(new_var, Not(left), Not(right)))
+            clauses.append(Or(new_var, left, right))
         elif f.is_implies():
             left = tseitin_subformula(f.arg(0))
             right = tseitin_subformula(f.arg(1))
@@ -83,7 +84,11 @@ if __name__ == "__main__":
     formula3 = And(Iff(A, B), Iff(Not(C), D))
     formula4 = And(Or(A, B), Not(And(A, B)))
 
+    #our
+    formula5 = Or(And(A, Not(B)), And(C, Or(D, Not(A))))
+    formula6 = Or(Implies(A, B), Iff(C, Not(D)))
+
     # Apply Tseitin transformation
-    cnf_formula = tseitin_transformation(formula4)
-    print("formula:", formula4)
+    cnf_formula = tseitin_transformation(formula6)
+    print("formula:", formula6)
     print("CNF formula:", cnf_formula)
