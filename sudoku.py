@@ -1,4 +1,4 @@
-from pysmt.shortcuts import Symbol, And, Solver
+from pysmt.shortcuts import Symbol, And, Solver, ExactlyOne, Or
 from pysmt.typing import BOOL
 
 def sudoku_solver(puzzle):
@@ -8,9 +8,40 @@ def sudoku_solver(puzzle):
     # Define constraints
     constraints = []
 
-    ###########################################
-    #             PUT YOUR CODE HERE
-    ###########################################
+    nums = [x for x in range(1, 10)]
+    rows = [i for i in range(9)]
+    cols = [j for j in range(9)]
+
+    # assign the existing numbers in puzzle into cells
+    for i in rows:
+        for j in cols:
+            if puzzle[i][j] != 0:
+                constraints.append(Or(cells[(i, j, puzzle[i][j])]))
+
+    # ensure every index contains one number
+    for i in rows:
+        for j in cols:
+            constraints.append(ExactlyOne(cells[i, j, num] for num in nums))
+
+    # ensure every row contains all numbers
+    for i in rows:
+        for num in nums:
+            constraints.append(ExactlyOne(cells[i, j, num] for j in cols))
+
+    # ensure every colum contains all numbers
+    for j in cols:
+        for num in nums:
+            constraints.append(ExactlyOne(cells[i, j, num] for i in rows))
+
+    # Ensure every 3x3 block contains all numbers
+    for block_row in range(0, 9, 3):
+        for block_col in range(0, 9, 3):
+            for num in nums:
+                constraints.append(ExactlyOne(
+                    cells[i, j, num]
+                    for i in range(block_row, block_row + 3)
+                    for j in range(block_col, block_col + 3)
+                ))
 
     # Solve the puzzle
     with Solver(name="z3") as solver:
